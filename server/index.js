@@ -1,17 +1,36 @@
-import express from 'express';
-import bodyParser from 'body-parser';
-import path from 'path';
-import history from 'connect-history-api-fallback';
+import express from 'express'
+import bodyParser from 'body-parser'
+import morgan from 'morgan'
+import path from 'path'
+import session from 'express-session'
+import KnexSessionStore from 'connect-session-knex'
+import db from './controllers/config/knex'
+import Debug from 'debug'
+import DevOptions from './controllers/config/DevOptions'
 
+import auth from './routes/auth'
 
+const SessionStore = KnexSessionStore(session);
+
+const debug = Debug('server:app');
 const port = process.env.PORT || 5000;
 const app = express();
+const store = new SessionStore({
+	knex: db,
+	tablename: 'session'
+})
 
 app.use(bodyParser.json());
-app.use(history());
+app.use(morgan('dev'));
 app.use('/dist', express.static('dist'));
+app.use(session({
+	secret: 'secret',
+	saveUninitialized: true,
+	resave: true,
+	store: store
+}))
 
-/* devOptions(app);
+DevOptions(app);
 
 //ROUTES
 app.use('/api/auth', auth);
@@ -20,26 +39,6 @@ app.get('/*', (req, res) => {
   res.sendFile(path.join(__dirname, '../index.html'));
 });
 
-app.listen(port, () => debug('Server listen on port =', port, 'ENV =', process.env.NODE_ENV)); */
+app.listen(port, () => debug('Server listen on port =', port, 'ENV =', process.env.NODE_ENV)); 
 
 
-	import webpack from 'webpack'
-	import webpackMiddleware from 'webpack-dev-middleware'
-	import webpackHotMiddleware from 'webpack-hot-middleware'
-	import webpackConfig from '../webpack.config.dev'
-
-if(process.env.NODE_ENV === 'development'){
-	const compiler = webpack(webpackConfig)
-	app.use(webpackMiddleware(compiler, {
-		hot: true,
-		publicPath: webpackConfig.output.publicPath,
-		noInfo: true
-	}))
-	app.use(webpackHotMiddleware(compiler))
-}
-
-app.get('/*', (req, res) => {
-	res.sendFile(path.join(__dirname, '../index.html'))
-})
-
-app.listen(port, ()=> console.log('Server listener on port =', port, 'ENV = ', process.env.NODE_ENV))
